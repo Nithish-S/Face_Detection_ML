@@ -1,0 +1,64 @@
+#Libraries Required
+
+# this line is not required unless you are in a notebook
+# TensorFlow and tf.keras
+import tensorflow as tf
+from tensorflow import keras
+# Helper libraries
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential,Model
+from tensorflow.keras.layers import Activation, Dense, BatchNormalization,Flatten, Conv2D,MaxPooling2D
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.metrics import categorical_crossentropy
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import imagenet_utils
+
+import os
+import shutil
+import random
+import warnings
+warnings.simplefilter(action='ignore',category=FutureWarning)
+import cv2
+from tensorflow.keras.preprocessing import image
+_______________________________________________________________________________________________________________________________
+#Define Training data, Validation Data, Test Data path.
+#Train_path= #..
+#valid_path= #..
+#Test_path= #..
+
+#Preproeesing Part of dataset
+_______________________________________________________________________________________________________________________________
+train_data = ImageDataGenerator(preprocessing_function= keras.applications.mobilenet.preprocess_input).flow_from_directory(
+    directory=train_path,batch_size=10,target_size=(224,224))
+valid_data = ImageDataGenerator(preprocessing_function= keras.applications.mobilenet.preprocess_input).flow_from_directory(
+    directory=valid_path,batch_size=10,target_size=(224,224))
+_______________________________________________________________________________________________________________________________
+#Creating a Model
+mobile = tf.keras.applications.mobilenet.MobileNet()
+mobile.summary()
+x = mobile.layers[-6].output
+output_layer = Sequential([
+    Dense(16,activation='relu'),
+    Dense(2,activation='softmax')
+])(x)
+model= Model(inputs=mobile.input, outputs=output_layer)
+model.summary()
+
+for layer in model.layers[:-1]:
+    layer.trainable = False
+model.compile(metrics=['accuracy'],loss= 'categorical_crossentropy', optimizer=Adam(learning_rate= 0.0001))
+model.fit(x= train_data, validation_data= valid_data, epochs= 3)
+
+#Preprocessing Tes dataset
+test_data = ImageDataGenerator(preprocessing_function= keras.applications.mobilenet.preprocess_input).flow_from_directory(
+    directory=test_path,batch_size=10,target_size=(224,224),shuffle= False)
+
+predictions = model.predict(x= test_data, verbose= 0)
+categry=[#Category - Names(Nme of people in dataset)]
+for predicts in predictions:
+    id=np.argmax(predicts)
+    print(categry[id])
+_______________________________________________________________________________________________________________________________
+#Save the created model
+model.save('Face_detection.h5')
